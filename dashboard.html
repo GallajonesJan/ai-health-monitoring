@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | AI Health Monitor</title>
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script>
+    // Apply dark mode immediately before page renders
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Back Button -->
+  <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html" class="active">
+  <img src="dashboard.png" class="nav-icon"> Dashboard
+</a>
+        <a href="./healthlogs.html">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="./device.html">🔌 Device</a>
+        <a href="./ai-assistant.html">
+        
+  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+  AlertoBot
+</a>
+        <a href="./about.html">ℹ️ About</a>
+        <a href="#" id="logout-btn">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main Dashboard -->
+    <main class="main-content">
+      <header class="dashboard-header">
+        <h1 id="welcome-text">Welcome, User 👋</h1>
+        <p>Here's your latest health summary</p>
+      </header>
+
+      <!-- Health Cards -->  
+      <section class="cards">
+        <div class="card">
+          <h3>❤️ Heart Rate</h3>
+          <p class="value">78 <span>BPM</span></p>
+        </div>
+
+        <div class="card">
+          <h3>🌬️ SpO₂</h3>
+          <p class="value">98<span>%</span></p>
+        </div>
+
+      </section>
+
+      <!-- Chart Section -->
+      <section class="chart-section">
+        <h2>Health Progression Graph</h2>
+        <div class="chart-container">
+          <canvas id="healthChart"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="api.js"></script>
+
+  <script>
+    // Apply saved theme on page load
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+
+    // Static weekly data
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    const data = {
+      labels: labels,
+      datasets: [
+        {
+          label: "Heart Rate (BPM)",
+          data: [78, 80, 76, 82, 79, 77, 81],
+          borderColor: "#ff4d6d",
+          backgroundColor: "rgba(255, 77, 109, 0.2)",
+          tension: 0.4,
+          fill: false,
+        },
+      
+        {
+          label: "SpO₂ (%)",
+          data: [98, 97, 99, 98, 98, 97, 99],
+          borderColor: "#00c853",
+          backgroundColor: "rgba(0, 200, 83, 0.2)",
+          tension: 0.4,
+          fill: false,
+        },
+
+      ],
+    };
+
+    // Detect dark mode from localStorage
+    const isDarkMode = localStorage.getItem("theme") === "dark";
+
+    const chartOptions = {
+      responsive: true,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: isDarkMode ? "#ffffff" : "#000000",
+            font: { size: 13 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            // 🧠 Add custom units per dataset
+            label: function (context) {
+              let label = context.dataset.label || "";
+              let value = context.parsed.y;
+              if (label.includes("Heart Rate")) return `${label}: ${value} BPM`;
+              if (label.includes("SpO₂")) return `${label}: ${value}%`;
+              return `${label}: ${value}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: isDarkMode ? "#ffffff" : "#000000",
+          },
+          grid: {
+            color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+          },
+        },
+        y: {
+          ticks: {
+            color: isDarkMode ? "#ffffff" : "#000000",
+          },
+          grid: {
+            color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+          },
+        },
+      },
+      animation: {
+        duration: 1200,
+        easing: "easeInOutQuart",
+      },
+    };
+
+    const ctx = document.getElementById("healthChart").getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: data,
+      options: chartOptions,
+    });
+
+/* -----------------------------
+   CHECK LOGIN
+------------------------------ */
+if (!localStorage.getItem("access_token")) {
+    window.location.href = "signin.html";
+}
+
+/* -----------------------------
+   LOGOUT BUTTONa
+------------------------------ */
+document.getElementById("logout-btn").addEventListener("click", function (e) {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "signin.html";
+});
+
+/* -----------------------------
+   GLOBAL CONFIG
+------------------------------ */
+const API_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+const token = localStorage.getItem("access_token");
+const userId = localStorage.getItem("user_id");
+
+/* -----------------------------
+   LOAD USER FULLNAME
+------------------------------ */
+async function loadUserName() {
+    try {
+        const res = await fetch(`${API_URL}/user/${userId}`, {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!res.ok) {
+            console.error("HTTP error:", res.status);
+            return;
+        }
+
+        const data = await res.json();
+        console.log("USER DATA:", data);
+
+        if (data.fullname) {
+            document.getElementById("welcome-text").innerText =
+                `Welcome, ${data.fullname.split(" ")[0]} 👋`;
+        }
+
+    } catch (err) {
+        console.error("❌ Failed to fetch user:", err);
+    }
+}
+
+/* -----------------------------
+   UPDATE DASHBOARD VITALS
+------------------------------ */
+async function loadVitals() {
+    try {
+        const res = await fetch(`${API_URL}/healthlogs`, {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + token }
+        });
+
+        if (!res.ok) {
+            console.error("Vitals HTTP error:", res.status);
+            return;
+        }
+
+        const records = await res.json();
+        if (!records.length) return;
+
+        const latest = records[0];
+
+        document.querySelector(".card:nth-child(1) .value").innerHTML =
+            `${latest.heart_rate ?? "—"} <span>BPM</span>`;
+
+        document.querySelector(".card:nth-child(2) .value").innerHTML =
+            `${latest.spo2 ?? "—"}<span>%</span>`;
+
+    } catch (error) {
+        console.error("❌ Failed to fetch vitals:", error);
+    }
+}
+
+/* -----------------------------
+   INITIAL LOAD + AUTO REFRESH
+------------------------------ */
+document.addEventListener("DOMContentLoaded", () => {
+    loadUserName();
+    loadVitals();
+    setInterval(loadVitals, 5000); // refresh every 5 sec
+});
+
+  </script>
+  <script src="device.js"></script>
+</body>
+</html>

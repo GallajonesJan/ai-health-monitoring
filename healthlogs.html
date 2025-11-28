@@ -1,0 +1,189 @@
+<!-- UPDATED healthlogs.html with debug logs restored -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Logs | AI Health Monitor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Scrollable table wrapper */
+    .table-wrapper {
+      max-height: 300px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      background: white;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+  <div class="dashboard-container">
+    <aside class="sidebar">
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
+        <a href="./healthlogs.html" class="active">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="./device.html">🔌 Device</a>
+        <a href="./ai-assistant.html">
+        
+  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+  AlertoBot
+</a>
+        <a href="./about.html">ℹ️ About</a>
+        <a href="./signin.html">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="dashboard-header">
+        <h1 id="welcome-text">Health Logs</h1>
+        <p>Your recent monitoring records from ESP32 sensor</p>
+      </header>
+
+      <section class="live-vitals">
+        <h2>📡 Latest Reading</h2>
+        <div class="vitals-grid">
+          <div class="vital-box"><h3>❤️ Heart Rate</h3><p id="live-heart-rate">—</p></div>
+          <div class="vital-box"><h3>🌬️ SpO₂</h3><p id="live-spo2">—</p></div>
+          <div class="vital-box"><h3>🕒 Timestamp</h3><p id="live-timestamp">—</p></div>
+        </div>
+      </section>
+
+      <section class="logs-section">
+        <h2>📋 Recent Health Records</h2>
+        <button id="refresh-btn">🔄 Refresh</button>
+
+        <div class="table-wrapper">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>❤️ Heart Rate (BPM)</th>
+                <th>🌬️ SpO₂ (%)</th>
+                <th>IR Value</th>
+                <th>RED Value</th>
+              </tr>
+            </thead>
+            <tbody id="health-log-body">
+              <tr><td colspan="6" style="text-align:center; padding:20px;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+<!--
+      <section class="chart-section">
+        <h2>📈 Health Trends</h2>
+        <canvas id="healthChart" width="800" height="300"></canvas>
+      </section>
+      -->
+    </main>
+  </div>
+
+  <script>
+    const FLASK_URL = 'https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev';
+    const token = localStorage.getItem("access_token");
+    const tableBody = document.getElementById("health-log-body");
+    const refreshBtn = document.getElementById("refresh-btn");
+    let chart;
+
+    function formatDateTime(iso) {
+      if (!iso || isNaN(Date.parse(iso))) return { date: "—", time: "—", raw: null };
+      const d = new Date(iso);
+      return {
+        date: d.toLocaleDateString("en-CA"),
+        time: d.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+    }
+
+    function renderRow(record) {
+      const { date, time } = formatDateTime(record.timestamp);
+      return `
+        <tr>
+          <td>${date}</td>
+          <td>${time}</td>
+          <td>${record.heart_rate ?? "—"}</td>
+          <td>${record.spo2 ?? "—"}</td>
+          <td>${record.ir ?? "—"}</td>
+          <td>${record.red ?? "—"}</td>
+        </tr>`;
+    }
+
+    function updateLatestVitals(records) {
+      if (records.length > 0) {
+        const latest = records[0];
+        document.getElementById("live-heart-rate").textContent = latest.heart_rate ?? "—";
+        document.getElementById("live-spo2").textContent = latest.spo2 ?? "—";
+        document.getElementById("live-timestamp").textContent = formatDateTime(latest.timestamp).time;
+      }
+    }
+
+    function renderChart(records) {
+      const chartData = records.slice(0, 10).reverse();
+      const labels = chartData.map(r => formatDateTime(r.timestamp).time);
+      const hr = chartData.map(r => r.heart_rate || 0);
+      const spo = chartData.map(r => r.spo2 || 0);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(document.getElementById("healthChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Heart Rate", data: hr, borderColor: "#FF6384", backgroundColor: "rgba(255,99,132,0.1)", fill: true },
+            { label: "SpO₂", data: spo, borderColor: "#36A2EB", backgroundColor: "rgba(54,162,235,0.1)", fill: true }
+          ]
+        }
+      });
+    }
+
+    async function loadHealthLogs() {
+      console.log("📡 Fetching Health logs from Flask...");
+
+      if (!token) {
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ Please log in first</td></tr>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${FLASK_URL}/healthlogs`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const records = await res.json();
+        console.log("✅ Received records:", records);
+
+        if (!records.length) {
+          tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">📭 No health records found.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = records.map(renderRow).join("");
+        updateLatestVitals(records);
+        renderChart(records);
+
+      } catch (err) {
+        console.error("❌ Error loading records:", err);
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ ${err.message}</td></tr>`;
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadHealthLogs);
+    loadHealthLogs();
+    setInterval(loadHealthLogs, 5000);
+
+    
+  </script>
+</body>
+</html>
