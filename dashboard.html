@@ -44,6 +44,12 @@
       <p>Here's your latest health summary</p>
     </header>
 
+    <!-- Alert Banner -->
+    <div id="alert-banner" class="alert-banner">
+      <h3 id="alert-title">🔔 Health Alert</h3>
+      <p id="alert-message">Checking your vitals...</p>
+    </div>
+
     <!-- Health Cards -->
     <section class="cards">
       <div class="card">
@@ -114,6 +120,53 @@ async function loadUserName() {
   }
 }
 
+function showAlert(alertData) {
+  const banner = document.getElementById("alert-banner");
+  const title = document.getElementById("alert-title");
+  const message = document.getElementById("alert-message");
+  
+  // Remove all alert classes
+  banner.classList.remove("alert-normal", "alert-warning", "alert-critical");
+  
+  // Add appropriate class based on level
+  const levelClass = {
+    0: "alert-normal",
+    1: "alert-warning",
+    2: "alert-critical"
+  };
+  
+  banner.classList.add(levelClass[alertData.level] || "alert-normal");
+  banner.classList.add("show");
+  
+  const icons = { 0: "✅", 1: "⚠️", 2: "🚨" };
+  title.textContent = `${icons[alertData.level]} ${alertData.level_name} Status`;
+  message.textContent = alertData.message;
+  
+  // Update badges
+  updateBadges(alertData);
+}
+
+function updateBadges(alertData) {
+  const hrBadge = document.getElementById("hr-badge");
+  const spo2Badge = document.getElementById("spo2-badge");
+  
+  const colors = {
+    0: "#27ae60",
+    1: "#f39c12",
+    2: "#e74c3c"
+  };
+  
+  const color = colors[alertData.level] || "#95a5a6";
+  const text = alertData.level_name || "Unknown";
+  
+  [hrBadge, spo2Badge].forEach(badge => {
+    badge.textContent = text;
+    badge.style.backgroundColor = color;
+    badge.style.color = "white";
+  });
+}
+
+
 /* ===================== LOAD LATEST VITALS ===================== */
 async function loadVitals() {
   const { ok, data, error } = await fetchJSON(`${API_URL}/healthlogs`);
@@ -125,6 +178,16 @@ async function loadVitals() {
     `${latest.heart_rate ?? "—"} <span>BPM</span>`;
   document.querySelector(".card:nth-child(2) .value").innerHTML =
     `${latest.spo2 ?? "—"}<span>%</span>`;
+
+  // Show alert if available
+  if (latest.alert_info) {
+    showAlert({
+      level: latest.alert_level,
+      level_name: latest.alert_info.level_name,
+      message: latest.alert_message,
+      color: latest.alert_info.color
+    });
+  }
 
   updateChart(data);
 }
