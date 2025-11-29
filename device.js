@@ -61,7 +61,7 @@ if (!document.getElementById("connect-btn")) {
   // ----------------------------------------------------
   async function sendReadingToBackend(payload) {
       if (!getToken()) return;
-      const { ok, data, error } = await fetchJSON(`${backendURL}/sensor-reading`, {
+      const { ok, data, error } = await fetchJSON(`${backendURL}/sensor-readings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
