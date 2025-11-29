@@ -66,12 +66,12 @@
       <div class="card" id="hr-card">
         <h3>❤️ Heart Rate</h3>
         <p class="value" id="hr-value">— <span>BPM</span></p>
-        <span id="hr-badge" class="alert-badge">Normal</span>
+        <span id="hr-badge" class="alert-badge badge-normal">Normal</span>
       </div>
       <div class="card" id="spo2-card">
         <h3>🌬️ SpO₂</h3>
         <p class="value" id="spo2-value">— <span>%</span></p>
-        <span id="spo2-badge" class="alert-badge">Normal</span>
+        <span id="spo2-badge" class="alert-badge badge-normal">Normal</span>
       </div>
     </section>
 
@@ -137,21 +137,26 @@ function updateBadges(alertData) {
     return;
   }
   
-  // Green for Normal, Red for Warning/Critical
-  const colors = {
-    0: "#27ae60",  // Green
-    1: "#e74c3c",  // Red
-    2: "#e74c3c"   // Red
-  };
-  
-  const color = colors[alertData.level] || "#95a5a6";
   const text = alertData.level_name || "Unknown";
   
+  // Remove old classes
   [hrBadge, spo2Badge].forEach(badge => {
     if (badge) {
+      badge.classList.remove('badge-normal', 'badge-warning', 'badge-critical');
       badge.textContent = text;
-      badge.style.backgroundColor = color;
-      badge.style.color = "white";
+      
+      // Add new class based on level
+      if (alertData.level === 0) {
+        badge.classList.add('badge-normal');
+      } else if (alertData.level === 1) {
+        badge.classList.add('badge-warning');
+      } else if (alertData.level === 2) {
+        badge.classList.add('badge-critical');
+      }
+      
+      // Remove inline styles that might override
+      badge.style.backgroundColor = '';
+      badge.style.color = '';
     }
   });
 }
