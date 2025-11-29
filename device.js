@@ -16,8 +16,8 @@ if (!document.getElementById("connect-btn")) {
   // ----------------------------------------------------
   // SETTINGS
   // ----------------------------------------------------
-  const esp32IP = "http://192.168.100.18";
   const backendURL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+  const esp32Proxy = `${backendURL}/esp32`; // Proxy endpoint on backend
   let isConnected = false;
   let pollInterval = null;
 
@@ -47,7 +47,7 @@ if (!document.getElementById("connect-btn")) {
           try {
               return { ok: res.ok, data: JSON.parse(text) };
           } catch {
-              console.error("❌ NGROK or ESP32 returned HTML:", text);
+              console.error("❌ Backend returned invalid JSON:", text);
               return { ok: false, error: "Invalid JSON", raw: text };
           }
       } catch (err) {
@@ -61,7 +61,7 @@ if (!document.getElementById("connect-btn")) {
   // ----------------------------------------------------
   async function sendReadingToBackend(payload) {
       if (!getToken()) return;
-      const { ok, data, error } = await fetchJSON(backendURL, {
+      const { ok, data, error } = await fetchJSON(`${backendURL}/store-reading`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -76,13 +76,14 @@ if (!document.getElementById("connect-btn")) {
   }
 
   // ----------------------------------------------------
-  // POLL ESP32 FOR READINGS
+  // POLL ESP32 THROUGH BACKEND PROXY
   // ----------------------------------------------------
   async function pollReadings() {
       try {
-          const res = await fetch(`${esp32IP}/readings`, { method: "GET", mode: "cors" });
-          if (!res.ok) throw new Error(`ESP32 readings failed: ${res.status}`);
-          const data = await res.json();
+          const res = await fetchJSON(`${esp32Proxy}/readings`);
+          if (!res.ok) throw new Error(res.error || "ESP32 proxy failed");
+          const data = res.data;
+
           updateDeviceInfoUI(data);
 
           await sendReadingToBackend({
@@ -108,9 +109,8 @@ if (!document.getElementById("connect-btn")) {
       }
 
       const savedStatus = localStorage.getItem("esp_connected");
-      const savedIP = localStorage.getItem("esp32_ip");
 
-      if (savedStatus === "true" && savedIP === esp32IP) {
+      if (savedStatus === "true") {
           isConnected = true;
           statusText.textContent = "🟢 Connected";
           connectBtn.textContent = "Disconnect Device";
@@ -134,7 +134,6 @@ if (!document.getElementById("connect-btn")) {
       if (isConnected) {
           if (pollInterval) clearInterval(pollInterval);
           localStorage.removeItem("esp_connected");
-          localStorage.removeItem("esp32_ip");
           isConnected = false;
           statusText.textContent = "🔴 Device disconnected";
           deviceInfo.classList.add("hidden");
@@ -150,14 +149,13 @@ if (!document.getElementById("connect-btn")) {
       connectBtn.textContent = "Connecting...";
 
       try {
-          const res = await fetch(`${esp32IP}/connect`, { method: "GET", mode: "cors" });
-          if (!res.ok) throw new Error(`ESP32 connect failed: ${res.status}`);
-          const data = await res.json();
+          const res = await fetchJSON(`${esp32Proxy}/connect`);
+          if (!res.ok) throw new Error(res.error || "ESP32 proxy failed");
+          const data = res.data;
 
           if (data?.status === "connected") {
               isConnected = true;
               localStorage.setItem("esp_connected", "true");
-              localStorage.setItem("esp32_ip", esp32IP);
               statusText.textContent = "🟢 Device Connected Successfully!";
               connectBtn.textContent = "Disconnect Device";
               deviceInfo.classList.remove("hidden");
