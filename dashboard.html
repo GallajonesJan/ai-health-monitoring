@@ -7,14 +7,27 @@
 <link rel="stylesheet" href="styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
-.alert-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 12px;
-  font-size: 0.8rem;
+/* Badge styling - simple text style like Image 1 */
+.card .alert-badge {
+  display: block !important;
+  margin-top: 12px;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin-top: 10px;
-  color: white;
+  padding: 0;
+  border-radius: 0;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Color overrides */
+.card .alert-badge.badge-normal {
+  color: #3498db !important;
+}
+
+.card .alert-badge.badge-warning,
+.card .alert-badge.badge-critical {
+  color: #e74c3c !important;
 }
 </style>
 <script>
