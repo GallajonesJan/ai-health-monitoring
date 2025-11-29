@@ -131,7 +131,7 @@ async function fetchJSON(url, options = {}) {
   // Add ngrok bypass header
   options.headers = {
     ...(options.headers || {}),
-    //"ngrok-skip-browser-warning": "true"
+    "ngrok-skip-browser-warning": "true"
   };
 
   const res = await fetch(url, options);
@@ -158,7 +158,11 @@ async function loadHealthLogs() {
 
   const { ok, data, error, raw } = await fetchJSON(`${FLASK_URL}/healthlogs`, {
     method: "GET",
-    headers: { "Authorization": `Bearer ${token}` }
+    headers:{
+  "Authorization": `Bearer ${token}`,
+  "ngrok-skip-browser-warning": "true"
+}
+
   });
 
   if (!ok) {
