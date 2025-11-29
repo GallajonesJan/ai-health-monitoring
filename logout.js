@@ -23,5 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Redirect to sign-in page
     window.location.href = "signin.html";
+
+    
   });
 });
