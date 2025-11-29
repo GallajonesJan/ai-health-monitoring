@@ -8,8 +8,21 @@
 <link rel="stylesheet" href="styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
+<style>
+  /* Badge styling (missing previously) */
+  .badge {
+    margin-top: 8px;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+  }
+</style>
+
 <script>
-  // Apply dark mode immediately before page renders
+  // Apply dark mode immediately
   (function() {
     const theme = localStorage.getItem('theme') || 'light';
     if (theme === 'dark') document.documentElement.classList.add('dark-mode');
@@ -31,7 +44,10 @@
       <a href="./healthlogs.html">📋 Health Logs</a>
       <a href="./settings.html">⚙️ Settings</a>
       <a href="./device.html">🔌 Device</a>
-      <a href="./ai-assistant.html">🤖 AlertoBot</a>
+              <a href="./ai-assistant.html">
+  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+  AlertoBot
+</a>
       <a href="./about.html">ℹ️ About</a>
       <a href="#" id="logout-btn">🚪 Logout</a>
     </nav>
@@ -55,10 +71,13 @@
       <div class="card">
         <h3>❤️ Heart Rate</h3>
         <p class="value">— <span>BPM</span></p>
+        <span id="hr-badge" class="badge">Normal</span>
       </div>
+
       <div class="card">
         <h3>🌬️ SpO₂</h3>
         <p class="value">— <span>%</span></p>
+        <span id="spo2-badge" class="badge">Normal</span>
       </div>
     </section>
 
@@ -124,48 +143,44 @@ function showAlert(alertData) {
   const banner = document.getElementById("alert-banner");
   const title = document.getElementById("alert-title");
   const message = document.getElementById("alert-message");
-  
-  // Remove all alert classes
+
   banner.classList.remove("alert-normal", "alert-warning", "alert-critical");
-  
-  // Add appropriate class based on level
+
   const levelClass = {
     0: "alert-normal",
     1: "alert-warning",
     2: "alert-critical"
   };
-  
+
   banner.classList.add(levelClass[alertData.level] || "alert-normal");
   banner.classList.add("show");
-  
+
   const icons = { 0: "✅", 1: "⚠️", 2: "🚨" };
   title.textContent = `${icons[alertData.level]} ${alertData.level_name} Status`;
   message.textContent = alertData.message;
-  
-  // Update badges
+
   updateBadges(alertData);
 }
 
 function updateBadges(alertData) {
   const hrBadge = document.getElementById("hr-badge");
   const spo2Badge = document.getElementById("spo2-badge");
-  
+
   const colors = {
     0: "#27ae60",
     1: "#f39c12",
     2: "#e74c3c"
   };
-  
+
   const color = colors[alertData.level] || "#95a5a6";
   const text = alertData.level_name || "Unknown";
-  
+
   [hrBadge, spo2Badge].forEach(badge => {
     badge.textContent = text;
     badge.style.backgroundColor = color;
     badge.style.color = "white";
   });
 }
-
 
 /* ===================== LOAD LATEST VITALS ===================== */
 async function loadVitals() {
@@ -179,7 +194,6 @@ async function loadVitals() {
   document.querySelector(".card:nth-child(2) .value").innerHTML =
     `${latest.spo2 ?? "—"}<span>%</span>`;
 
-  // Show alert if available
   if (latest.alert_info) {
     showAlert({
       level: latest.alert_level,
@@ -212,7 +226,9 @@ const healthChart = new Chart(ctx, {
       legend: { labels: { color: isDarkMode ? "#fff" : "#000", font: { size: 13 } } },
       tooltip: {
         callbacks: {
-          label: ctx => ctx.dataset.label.includes("Heart") ? `${ctx.dataset.label}: ${ctx.parsed.y} BPM` : `${ctx.dataset.label}: ${ctx.parsed.y}%`
+          label: ctx => ctx.dataset.label.includes("Heart") ?
+            `${ctx.dataset.label}: ${ctx.parsed.y} BPM` :
+            `${ctx.dataset.label}: ${ctx.parsed.y}%`
         }
       }
     },
@@ -225,7 +241,9 @@ const healthChart = new Chart(ctx, {
 
 function updateChart(records) {
   const last7 = records.slice(0, 7).reverse();
-  healthChart.data.labels = last7.map(r => new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+  healthChart.data.labels = last7.map(r =>
+    new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  );
   healthChart.data.datasets[0].data = last7.map(r => r.heart_rate ?? 0);
   healthChart.data.datasets[1].data = last7.map(r => r.spo2 ?? 0);
   healthChart.update();
