@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
 <style>
-  /* Badge styling (missing previously) */
+  /* Badge styling */
   .badge {
     margin-top: 8px;
     display: inline-block;
@@ -19,19 +19,79 @@
     font-weight: 600;
     color: white;
   }
+
+  /* Professional Alert Banner */
+  .alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    border-radius: 10px;
+    margin: 20px 0;
+    border-left: 5px solid transparent;
+    background: #f6f8f7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s ease;
+  }
+
+  .alert-banner.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .alert-icon {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .alert-text h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .alert-text p {
+    margin: 3px 0 0;
+    font-size: 14px;
+    color: #555;
+  }
+
+  .alert-normal {
+    border-left-color: #27ae60;
+    background: #e9f6ee;
+  }
+  .alert-normal .alert-icon {
+    color: #27ae60;
+  }
+
+  .alert-warning {
+    border-left-color: #f39c12;
+    background: #fff6e5;
+  }
+  .alert-warning .alert-icon {
+    color: #f39c12;
+  }
+
+  .alert-critical {
+    border-left-color: #e74c3c;
+    background: #fdecea;
+  }
+  .alert-critical .alert-icon {
+    color: #e74c3c;
+  }
 </style>
 
 <script>
-  // Apply dark mode immediately
   (function() {
     const theme = localStorage.getItem('theme') || 'light';
     if (theme === 'dark') document.documentElement.classList.add('dark-mode');
   })();
 </script>
 </head>
-<body>
 
-<!-- Back Button -->
+<body>
 <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
 
 <div class="dashboard-container">
@@ -45,32 +105,29 @@
       <a href="./settings.html">⚙️ Settings</a>
       <a href="./device.html">🔌 Device</a>
       <a href="./ai-assistant.html">
-  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
-  AlertoBot
-</a>
+        <img src="chatbot.jpg" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+        AlertoBot
+      </a>
       <a href="./about.html">ℹ️ About</a>
       <a href="#" id="logout-btn">🚪 Logout</a>
     </nav>
   </aside>
 
-  <!-- Main Dashboard -->
+  <!-- Main Content -->
   <main class="main-content">
     <header class="dashboard-header">
       <h1 id="welcome-text">Welcome, User 👋</h1>
       <p>Here's your latest health summary</p>
     </header>
 
-    <!-- Alert Banner -->
-<!-- Professional Alert Banner -->
-
-<div id="alert-banner" class="alert-banner">
-  <div class="alert-icon">✔</div>
-  <div class="alert-text">
-    <h3 id="alert-title">Normal Status</h3>
-    <p id="alert-message">Your vitals are within healthy range.</p>
-  </div>
-</div>
-
+    <!-- Professional Alert Banner -->
+    <div id="alert-banner" class="alert-banner">
+      <div class="alert-icon">✔</div>
+      <div class="alert-text">
+        <h3 id="alert-title">Normal Status</h3>
+        <p id="alert-message">Checking your vitals...</p>
+      </div>
+    </div>
 
     <!-- Health Cards -->
     <section class="cards">
@@ -106,28 +163,29 @@ const token = localStorage.getItem("access_token");
 
 if (!token) window.location.href = "signin.html";
 
-// Logout
-document.getElementById("logout-btn").addEventListener("click", (e) => {
+/* Logout */
+document.getElementById("logout-btn").addEventListener("click", e => {
   e.preventDefault();
   localStorage.clear();
   window.location.href = "signin.html";
 });
 
-/* ===================== SAFE FETCH JSON ===================== */
+/* ===================== SAFE FETCH WRAPPER ===================== */
 async function fetchJSON(url, options = {}) {
   options.headers = {
     ...(options.headers || {}),
     "Authorization": `Bearer ${token}`,
     "ngrok-skip-browser-warning": "true"
   };
+
   try {
     const res = await fetch(url, options);
     const text = await res.text();
     try {
       return { ok: res.ok, data: JSON.parse(text) };
     } catch {
-      console.error("❌ NGROK returned HTML instead of JSON:", text);
-      return { ok: false, error: "Invalid JSON from server", raw: text };
+      console.error("❌ Invalid JSON:", text);
+      return { ok: false, error: "Server returned HTML", raw: text };
     }
   } catch (err) {
     console.error("❌ Fetch failed:", err);
@@ -135,50 +193,43 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
-/* ===================== LOAD USER INFO ===================== */
+/* ===================== LOAD USER NAME ===================== */
 async function loadUserName() {
-  const { ok, data, error } = await fetchJSON(`${API_URL}/user-info`);
-  if (!ok) return console.error("Failed to load user:", error);
-  if (data.fullname) {
+  const { ok, data } = await fetchJSON(`${API_URL}/user-info`);
+  if (ok && data.fullname) {
     document.getElementById("welcome-text").innerText =
       `Welcome, ${data.fullname.split(" ")[0]} 👋`;
   }
 }
 
+/* ===================== ALERT BANNER ===================== */
 function showAlert(alertData) {
   const banner = document.getElementById("alert-banner");
   const title = document.getElementById("alert-title");
   const message = document.getElementById("alert-message");
+  const iconBox = document.querySelector(".alert-icon");
 
   banner.classList.remove("alert-normal", "alert-warning", "alert-critical");
 
-  const levelClass = {
+  const classMap = {
     0: "alert-normal",
     1: "alert-warning",
     2: "alert-critical"
   };
-
-  banner.classList.add(levelClass[alertData.level] || "alert-normal");
+  banner.classList.add(classMap[alertData.level] || "alert-normal");
   banner.classList.add("show");
 
- // Icons for left-side icon box
-const icons = { 0: "✔", 1: "⚠", 2: "⛔" };
+  const icons = { 0: "✔", 1: "⚠", 2: "⛔" };
+  iconBox.textContent = icons[alertData.level];
 
-// Update left icon
-document.querySelector(".alert-icon").textContent = icons[alertData.level];
-
-// Text without emoji
-title.textContent = `${alertData.level_name} Status`;
-message.textContent = alertData.message;
-
+  title.textContent = `${alertData.level_name} Status`;
+  message.textContent = alertData.message;
 
   updateBadges(alertData);
 }
 
+/* ===================== BADGE UPDATES ===================== */
 function updateBadges(alertData) {
-  const hrBadge = document.getElementById("hr-badge");
-  const spo2Badge = document.getElementById("spo2-badge");
-
   const colors = {
     0: "#27ae60",
     1: "#f39c12",
@@ -188,22 +239,23 @@ function updateBadges(alertData) {
   const color = colors[alertData.level] || "#95a5a6";
   const text = alertData.level_name || "Unknown";
 
-  [hrBadge, spo2Badge].forEach(badge => {
+  ["hr-badge", "spo2-badge"].forEach(id => {
+    const badge = document.getElementById(id);
     badge.textContent = text;
     badge.style.backgroundColor = color;
-    badge.style.color = "white";
   });
 }
 
-/* ===================== LOAD LATEST VITALS ===================== */
+/* ===================== LOAD VITALS ===================== */
 async function loadVitals() {
-  const { ok, data, error } = await fetchJSON(`${API_URL}/healthlogs`);
-  if (!ok) return console.error("Failed to load vitals:", error);
-  if (!Array.isArray(data) || data.length === 0) return;
+  const { ok, data } = await fetchJSON(`${API_URL}/healthlogs`);
+  if (!ok || !Array.isArray(data) || data.length === 0) return;
 
   const latest = data[0];
+
   document.querySelector(".card:nth-child(1) .value").innerHTML =
     `${latest.heart_rate ?? "—"} <span>BPM</span>`;
+
   document.querySelector(".card:nth-child(2) .value").innerHTML =
     `${latest.spo2 ?? "—"}<span>%</span>`;
 
@@ -211,54 +263,63 @@ async function loadVitals() {
     showAlert({
       level: latest.alert_level,
       level_name: latest.alert_info.level_name,
-      message: latest.alert_message,
-      color: latest.alert_info.color
+      message: latest.alert_message
     });
   }
 
   updateChart(data);
 }
 
-/* ===================== INITIALIZE CHART ===================== */
+/* ===================== CHART ===================== */
 const ctx = document.getElementById("healthChart").getContext("2d");
 const isDarkMode = localStorage.getItem("theme") === "dark";
 
 const healthChart = new Chart(ctx, {
   type: "line",
-  data: {
-    labels: [],
-    datasets: [
-      { label: "Heart Rate (BPM)", data: [], borderColor: "#ff4d6d", backgroundColor: "rgba(255,77,109,0.2)", tension: 0.4, fill: false },
-      { label: "SpO₂ (%)", data: [], borderColor: "#00c853", backgroundColor: "rgba(0,200,83,0.2)", tension: 0.4, fill: false }
-    ]
-  },
+  data: { labels: [], datasets: [
+    {
+      label: "Heart Rate (BPM)",
+      data: [],
+      borderColor: "#ff4d6d",
+      backgroundColor: "rgba(255,77,109,0.2)",
+      tension: 0.4
+    },
+    {
+      label: "SpO₂ (%)",
+      data: [],
+      borderColor: "#00c853",
+      backgroundColor: "rgba(0,200,83,0.2)",
+      tension: 0.4
+    }
+  ]},
   options: {
     responsive: true,
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { labels: { color: isDarkMode ? "#fff" : "#000", font: { size: 13 } } },
-      tooltip: {
-        callbacks: {
-          label: ctx => ctx.dataset.label.includes("Heart") ?
-            `${ctx.dataset.label}: ${ctx.parsed.y} BPM` :
-            `${ctx.dataset.label}: ${ctx.parsed.y}%`
+      legend: {
+        labels: {
+          color: isDarkMode ? "#fff" : "#000",
+          font: { size: 13 }
         }
       }
     },
     scales: {
-      x: { ticks: { color: isDarkMode ? "#fff" : "#000" }, grid: { color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" } },
-      y: { ticks: { color: isDarkMode ? "#fff" : "#000" }, grid: { color: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" } }
+      x: { ticks: { color: isDarkMode ? "#fff" : "#000" }},
+      y: { ticks: { color: isDarkMode ? "#fff" : "#000" }}
     }
   }
 });
 
 function updateChart(records) {
   const last7 = records.slice(0, 7).reverse();
+
   healthChart.data.labels = last7.map(r =>
     new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
   );
+
   healthChart.data.datasets[0].data = last7.map(r => r.heart_rate ?? 0);
   healthChart.data.datasets[1].data = last7.map(r => r.spo2 ?? 0);
+
   healthChart.update();
 }
 
