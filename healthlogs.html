@@ -6,7 +6,7 @@
   <title>Health Logs | AI Health Monitor</title>
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     .table-wrapper {
       max-height: 300px;
@@ -82,18 +82,20 @@
   </div>
 
 <script>
-/* 🔥 CONFIG — update to your current ngrok URL */
+/* ============================================================
+   🔥 CONFIG — YOUR NGROK URL
+============================================================ */
 const FLASK_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
-/* Elements */
+/* DOM Elements */
 const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-/* Format helpers */
+/* Helpers */
 function formatDateTime(ts) {
   if (!ts || isNaN(Date.parse(ts))) return { date: "—", time: "—" };
-  let d = new Date(ts);
+  const d = new Date(ts);
   return {
     date: d.toLocaleDateString("en-CA"),
     time: d.toLocaleTimeString("en-US", { hour12: false })
@@ -110,8 +112,7 @@ function renderRow(r) {
       <td>${r.spo2 ?? "—"}</td>
       <td>${r.ir ?? "—"}</td>
       <td>${r.red ?? "—"}</td>
-    </tr>
-  `;
+    </tr>`;
 }
 
 function updateLatestVitals(records) {
@@ -122,25 +123,36 @@ function updateLatestVitals(records) {
   document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
 }
 
-/* 🔥 SAFER JSON FETCH — handles HTML responses */
+/* ============================================================
+   🔥 FIXED FETCH WRAPPER — prevents HTML ngrok errors
+============================================================ */
 async function fetchJSON(url, options = {}) {
+
+  // Add ngrok bypass header
+  options.headers = {
+    ...(options.headers || {}),
+    "ngrok-skip-browser-warning": "true"
+  };
+
   const res = await fetch(url, options);
+  const raw = await res.text();
 
-  const raw = await res.text(); // get raw response always
-
-  // If response is not JSON → return error
   try {
     return { ok: res.ok, data: JSON.parse(raw) };
-  } catch (err) {
-    console.error("❌ Server returned NON-JSON (HTML?):", raw);
-    return { ok: false, error: "Server returned invalid JSON", raw };
+  } catch {
+    console.error("❌ NGROK RETURNED HTML instead of JSON:\n", raw);
+    return { ok: false, error: "Invalid JSON from server", raw };
   }
 }
 
-/* MAIN LOAD FUNCTION */
+/* ============================================================
+   🔥 MAIN FUNCTION — Load logs
+============================================================ */
 async function loadHealthLogs() {
+
   if (!token) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    tableBody.innerHTML =
+      `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
   }
 
@@ -150,16 +162,17 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    console.error("❌ HealthLogs Error:", error || raw);
     tableBody.innerHTML = `
-      <tr><td colspan="6" style="text-align:center; color:red;">
-        ❌ Failed to load logs<br>
-        <small>${error || "Server Error"}</small>
-      </td></tr>`;
+      <tr>
+        <td colspan="6" style="text-align:center; color:red;">
+          ❌ Error loading logs<br>
+          <small>${error}</small>
+        </td>
+      </tr>`;
     return;
   }
 
-  if (!Array.isArray(data) || !data.length) {
+  if (!Array.isArray(data) || data.length === 0) {
     tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">📭 No records found.</td></tr>`;
     return;
   }
@@ -171,7 +184,7 @@ async function loadHealthLogs() {
 /* Events */
 refreshBtn.addEventListener("click", loadHealthLogs);
 
-/* Auto-refresh */
+/* Auto-refresh every 5s */
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
