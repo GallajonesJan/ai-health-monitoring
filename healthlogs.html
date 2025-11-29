@@ -131,7 +131,7 @@ async function fetchJSON(url, options = {}) {
   // Add ngrok bypass header
   options.headers = {
     ...(options.headers || {}),
-    "ngrok-skip-browser-warning": "true"
+    //"ngrok-skip-browser-warning": "true"
   };
 
   const res = await fetch(url, options);
