@@ -16,6 +16,23 @@
       background: white;
       margin-top: 10px;
     }
+    .vitals-grid {
+      display: flex;
+      gap: 20px;
+    }
+    .vital-box {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      flex: 1;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .back-btn {
+      margin: 10px;
+      padding: 5px 15px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -40,7 +57,6 @@
     </aside>
 
     <main class="main-content">
-
       <header class="dashboard-header">
         <h1>Health Logs</h1>
         <p>Your recent monitoring records from ESP32 sensor</p>
@@ -77,22 +93,15 @@
           </table>
         </div>
       </section>
-
     </main>
   </div>
 
 <script>
-/* ============================================================
-   🔥 CONFIG — YOUR NGROK URL
-============================================================ */
 const FLASK_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-
-/* DOM Elements */
 const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-/* Helpers */
 function formatDateTime(ts) {
   if (!ts || isNaN(Date.parse(ts))) return { date: "—", time: "—" };
   const d = new Date(ts);
@@ -123,56 +132,34 @@ function updateLatestVitals(records) {
   document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
 }
 
-/* ============================================================
-   🔥 FIXED FETCH WRAPPER — prevents HTML ngrok errors
-============================================================ */
 async function fetchJSON(url, options = {}) {
-
-  // Add ngrok bypass header
   options.headers = {
     ...(options.headers || {}),
     "ngrok-skip-browser-warning": "true"
   };
-
-  const res = await fetch(url, options);
-  const raw = await res.text();
-
   try {
-    return { ok: res.ok, data: JSON.parse(raw) };
-  } catch {
-    console.error("❌ NGROK RETURNED HTML instead of JSON:\n", raw);
-    return { ok: false, error: "Invalid JSON from server", raw };
+    const res = await fetch(url, options);
+    const text = await res.text();
+    return { ok: res.ok, data: JSON.parse(text) };
+  } catch (err) {
+    console.error("❌ NGROK returned HTML or invalid JSON:", err);
+    return { ok: false, error: "Invalid JSON from server" };
   }
 }
 
-/* ============================================================
-   🔥 MAIN FUNCTION — Load logs
-============================================================ */
 async function loadHealthLogs() {
-
   if (!token) {
-    tableBody.innerHTML =
-      `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
   }
 
-  const { ok, data, error, raw } = await fetchJSON(`${FLASK_URL}/healthlogs`, {
+  const { ok, data, error } = await fetchJSON(`${FLASK_URL}/healthlogs`, {
     method: "GET",
-    headers:{
-  "Authorization": `Bearer ${token}`,
-  "ngrok-skip-browser-warning": "true"
-}
-
+    headers: { "Authorization": `Bearer ${token}` }
   });
 
   if (!ok) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align:center; color:red;">
-          ❌ Error loading logs<br>
-          <small>${error}</small>
-        </td>
-      </tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
     return;
   }
 
@@ -185,10 +172,7 @@ async function loadHealthLogs() {
   updateLatestVitals(data);
 }
 
-/* Events */
 refreshBtn.addEventListener("click", loadHealthLogs);
-
-/* Auto-refresh every 5s */
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
