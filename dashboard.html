@@ -4,96 +4,39 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard | AI Health Monitor</title>
+
 <link rel="stylesheet" href="styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+
 <style>
-.alert-banner {
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  display: none;
-  animation: slideDown 0.5s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.alert-banner.show {
-  display: block;
-}
-
-.alert-banner h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2rem;
-}
-
-.alert-banner p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.alert-normal {
-  background: #d4edda;
-  border-left: 5px solid #27ae60;
-  color: #155724;
-}
-
-.alert-warning {
-  background: #fff3cd;
-  border-left: 5px solid #f39c12;
-  color: #856404;
-}
-
-.alert-critical {
-  background: #f8d7da;
-  border-left: 5px solid #e74c3c;
-  color: #721c24;
-  animation: pulse 2s infinite;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+  /* Badge styling (missing previously) */
+  .badge {
+    margin-top: 8px;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-  }
-  50% {
-    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6);
-  }
-}
-
-.alert-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-.card {
-  position: relative;
-}
-
-.card .alert-badge {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-}
 </style>
+
+<script>
+  // Apply dark mode immediately
+  (function() {
+    const theme = localStorage.getItem('theme') || 'light';
+    if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+  })();
+</script>
 </head>
 <body>
 
+<!-- Back Button -->
 <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
 
 <div class="dashboard-container">
+
+  <!-- Sidebar -->
   <aside class="sidebar">
     <h2 class="logo">AI<span>Health</span></h2>
     <nav class="nav-links">
@@ -101,12 +44,16 @@
       <a href="./healthlogs.html">📋 Health Logs</a>
       <a href="./settings.html">⚙️ Settings</a>
       <a href="./device.html">🔌 Device</a>
-      <a href="./ai-assistant.html">🤖 AlertoBot</a>
+      <a href="./ai-assistant.html">
+  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+  AlertoBot
+</a>
       <a href="./about.html">ℹ️ About</a>
       <a href="#" id="logout-btn">🚪 Logout</a>
     </nav>
   </aside>
 
+  <!-- Main Dashboard -->
   <main class="main-content">
     <header class="dashboard-header">
       <h1 id="welcome-text">Welcome, User 👋</h1>
@@ -114,22 +61,29 @@
     </header>
 
     <!-- Alert Banner -->
-    <div id="alert-banner" class="alert-banner">
-      <h3 id="alert-title">🔔 Health Alert</h3>
-      <p id="alert-message">Checking your vitals...</p>
-    </div>
+<!-- Professional Alert Banner -->
+
+<div id="alert-banner" class="alert-banner">
+  <div class="alert-icon">✔</div>
+  <div class="alert-text">
+    <h3 id="alert-title">Normal Status</h3>
+    <p id="alert-message">Your vitals are within healthy range.</p>
+  </div>
+</div>
+
 
     <!-- Health Cards -->
     <section class="cards">
-      <div class="card" id="hr-card">
+      <div class="card">
         <h3>❤️ Heart Rate</h3>
-        <p class="value" id="hr-value">— <span>BPM</span></p>
-        <span id="hr-badge" class="alert-badge" style="display: none;"></span>
+        <p class="value">— <span>BPM</span></p>
+        <span id="hr-badge" class="badge">Normal</span>
       </div>
-      <div class="card" id="spo2-card">
+
+      <div class="card">
         <h3>🌬️ SpO₂</h3>
-        <p class="value" id="spo2-value">— <span>%</span></p>
-        <span id="spo2-badge" class="alert-badge" style="display: none;"></span>
+        <p class="value">— <span>%</span></p>
+        <span id="spo2-badge" class="badge">Normal</span>
       </div>
     </section>
 
@@ -144,18 +98,22 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+/* ===================== GLOBAL CONFIG ===================== */
 const API_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 const token = localStorage.getItem("access_token");
 
 if (!token) window.location.href = "signin.html";
 
+// Logout
 document.getElementById("logout-btn").addEventListener("click", (e) => {
   e.preventDefault();
   localStorage.clear();
   window.location.href = "signin.html";
 });
 
+/* ===================== SAFE FETCH JSON ===================== */
 async function fetchJSON(url, options = {}) {
   options.headers = {
     ...(options.headers || {}),
@@ -168,7 +126,7 @@ async function fetchJSON(url, options = {}) {
     try {
       return { ok: res.ok, data: JSON.parse(text) };
     } catch {
-      console.error("❌ Invalid JSON:", text);
+      console.error("❌ NGROK returned HTML instead of JSON:", text);
       return { ok: false, error: "Invalid JSON from server", raw: text };
     }
   } catch (err) {
@@ -177,6 +135,7 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
+/* ===================== LOAD USER INFO ===================== */
 async function loadUserName() {
   const { ok, data, error } = await fetchJSON(`${API_URL}/user-info`);
   if (!ok) return console.error("Failed to load user:", error);
@@ -190,97 +149,77 @@ function showAlert(alertData) {
   const banner = document.getElementById("alert-banner");
   const title = document.getElementById("alert-title");
   const message = document.getElementById("alert-message");
-  
-  // Remove all alert classes
+
   banner.classList.remove("alert-normal", "alert-warning", "alert-critical");
-  
-  // Add appropriate class based on level
+
   const levelClass = {
     0: "alert-normal",
     1: "alert-warning",
     2: "alert-critical"
   };
-  
+
   banner.classList.add(levelClass[alertData.level] || "alert-normal");
   banner.classList.add("show");
-  
-  const icons = { 0: "✅", 1: "⚠️", 2: "🚨" };
-  title.textContent = `${icons[alertData.level]} ${alertData.level_name} Status`;
-  message.textContent = alertData.message;
-  
-  // Update badges
+
+ // Icons for left-side icon box
+const icons = { 0: "✔", 1: "⚠", 2: "⛔" };
+
+// Update left icon
+document.querySelector(".alert-icon").textContent = icons[alertData.level];
+
+// Text without emoji
+title.textContent = `${alertData.level_name} Status`;
+message.textContent = alertData.message;
+
+
   updateBadges(alertData);
 }
 
 function updateBadges(alertData) {
   const hrBadge = document.getElementById("hr-badge");
   const spo2Badge = document.getElementById("spo2-badge");
-  
-  if (!hrBadge || !spo2Badge) {
-    console.warn("Badge elements not found");
-    return;
-  }
-  
+
   const colors = {
     0: "#27ae60",
     1: "#f39c12",
     2: "#e74c3c"
   };
-  
+
   const color = colors[alertData.level] || "#95a5a6";
   const text = alertData.level_name || "Unknown";
-  
+
   [hrBadge, spo2Badge].forEach(badge => {
-    if (badge) {
-      badge.textContent = text;
-      badge.style.display = "inline-block";
-      badge.style.backgroundColor = color;
-      badge.style.color = "white";
-    }
+    badge.textContent = text;
+    badge.style.backgroundColor = color;
+    badge.style.color = "white";
   });
 }
 
+/* ===================== LOAD LATEST VITALS ===================== */
 async function loadVitals() {
   const { ok, data, error } = await fetchJSON(`${API_URL}/healthlogs`);
   if (!ok) return console.error("Failed to load vitals:", error);
   if (!Array.isArray(data) || data.length === 0) return;
 
   const latest = data[0];
-  
-  // Update values safely
-  const hrValueEl = document.querySelector("#hr-value");
-  const spo2ValueEl = document.querySelector("#spo2-value");
-  
-  if (hrValueEl) {
-    hrValueEl.innerHTML = `${latest.heart_rate ?? "—"} <span>BPM</span>`;
-  }
-  if (spo2ValueEl) {
-    spo2ValueEl.innerHTML = `${latest.spo2 ?? "—"}<span>%</span>`;
-  }
+  document.querySelector(".card:nth-child(1) .value").innerHTML =
+    `${latest.heart_rate ?? "—"} <span>BPM</span>`;
+  document.querySelector(".card:nth-child(2) .value").innerHTML =
+    `${latest.spo2 ?? "—"}<span>%</span>`;
 
-  // Show alert if available
-  if (latest.alert_level !== undefined && latest.alert_message) {
+  if (latest.alert_info) {
     showAlert({
       level: latest.alert_level,
-      level_name: latest.alert_info?.level_name || getAlertName(latest.alert_level),
+      level_name: latest.alert_info.level_name,
       message: latest.alert_message,
-      color: latest.alert_info?.color || getAlertColor(latest.alert_level)
+      color: latest.alert_info.color
     });
   }
 
   updateChart(data);
 }
 
-function getAlertName(level) {
-  const names = { 0: "Normal", 1: "Warning", 2: "Critical" };
-  return names[level] || "Unknown";
-}
-
-function getAlertColor(level) {
-  const colors = { 0: "#27ae60", 1: "#f39c12", 2: "#e74c3c" };
-  return colors[level] || "#95a5a6";
-}
-
+/* ===================== INITIALIZE CHART ===================== */
 const ctx = document.getElementById("healthChart").getContext("2d");
 const isDarkMode = localStorage.getItem("theme") === "dark";
 
@@ -300,7 +239,9 @@ const healthChart = new Chart(ctx, {
       legend: { labels: { color: isDarkMode ? "#fff" : "#000", font: { size: 13 } } },
       tooltip: {
         callbacks: {
-          label: ctx => ctx.dataset.label.includes("Heart") ? `${ctx.dataset.label}: ${ctx.parsed.y} BPM` : `${ctx.dataset.label}: ${ctx.parsed.y}%`
+          label: ctx => ctx.dataset.label.includes("Heart") ?
+            `${ctx.dataset.label}: ${ctx.parsed.y} BPM` :
+            `${ctx.dataset.label}: ${ctx.parsed.y}%`
         }
       }
     },
@@ -313,17 +254,22 @@ const healthChart = new Chart(ctx, {
 
 function updateChart(records) {
   const last7 = records.slice(0, 7).reverse();
-  healthChart.data.labels = last7.map(r => new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+  healthChart.data.labels = last7.map(r =>
+    new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  );
   healthChart.data.datasets[0].data = last7.map(r => r.heart_rate ?? 0);
   healthChart.data.datasets[1].data = last7.map(r => r.spo2 ?? 0);
   healthChart.update();
 }
 
+/* ===================== INITIAL LOAD ===================== */
 document.addEventListener("DOMContentLoaded", () => {
   loadUserName();
   loadVitals();
   setInterval(loadVitals, 5000);
 });
 </script>
+
+<script src="device.js"></script>
 </body>
 </html>
