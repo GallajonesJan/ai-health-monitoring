@@ -7,77 +7,22 @@
 <link rel="stylesheet" href="styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
-.alert-banner {
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  display: none;
-  animation: slideDown 0.5s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.alert-banner.show {
-  display: block;
-}
-
-.alert-banner h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2rem;
-}
-
-.alert-banner p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.alert-normal {
-  background: #d4edda;
-  border-left: 5px solid #27ae60;
-  color: #155724;
-}
-
-.alert-warning {
-  background: #fff3cd;
-  border-left: 5px solid #f39c12;
-  color: #856404;
-}
-
-.alert-critical {
-  background: #f8d7da;
-  border-left: 5px solid #e74c3c;
-  color: #721c24;
-  animation: pulse 2s infinite;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-  }
-  50% {
-    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6);
-  }
-}
-
 .alert-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  margin-left: 8px;
+  margin-top: 10px;
+  color: white;
 }
 </style>
+<script>
+  (function() {
+    const theme = localStorage.getItem('theme') || 'light';
+    if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+  })();
+</script>
 </head>
 <body>
 
@@ -103,23 +48,17 @@
       <p>Here's your latest health summary</p>
     </header>
 
-    <!-- Alert Banner -->
-    <div id="alert-banner" class="alert-banner">
-      <h3 id="alert-title">🔔 Health Alert</h3>
-      <p id="alert-message">Checking your vitals...</p>
-    </div>
-
     <!-- Health Cards -->
     <section class="cards">
       <div class="card" id="hr-card">
         <h3>❤️ Heart Rate</h3>
         <p class="value" id="hr-value">— <span>BPM</span></p>
-        <span id="hr-badge" class="alert-badge" style="display: none;"></span>
+        <span id="hr-badge" class="alert-badge">Normal</span>
       </div>
       <div class="card" id="spo2-card">
         <h3>🌬️ SpO₂</h3>
         <p class="value" id="spo2-value">— <span>%</span></p>
-        <span id="spo2-badge" class="alert-badge" style="display: none;"></span>
+        <span id="spo2-badge" class="alert-badge">Normal</span>
       </div>
     </section>
 
@@ -176,32 +115,6 @@ async function loadUserName() {
   }
 }
 
-function showAlert(alertData) {
-  const banner = document.getElementById("alert-banner");
-  const title = document.getElementById("alert-title");
-  const message = document.getElementById("alert-message");
-  
-  // Remove all alert classes
-  banner.classList.remove("alert-normal", "alert-warning", "alert-critical");
-  
-  // Add appropriate class based on level
-  const levelClass = {
-    0: "alert-normal",
-    1: "alert-warning",
-    2: "alert-critical"
-  };
-  
-  banner.classList.add(levelClass[alertData.level] || "alert-normal");
-  banner.classList.add("show");
-  
-  const icons = { 0: "✅", 1: "⚠️", 2: "🚨" };
-  title.textContent = `${icons[alertData.level]} ${alertData.level_name} Status`;
-  message.textContent = alertData.message;
-  
-  // Update badges
-  updateBadges(alertData);
-}
-
 function updateBadges(alertData) {
   const hrBadge = document.getElementById("hr-badge");
   const spo2Badge = document.getElementById("spo2-badge");
@@ -211,10 +124,11 @@ function updateBadges(alertData) {
     return;
   }
   
+  // Green for Normal, Red for Warning/Critical
   const colors = {
-    0: "#27ae60",
-    1: "#f39c12",
-    2: "#e74c3c"
+    0: "#27ae60",  // Green
+    1: "#e74c3c",  // Red
+    2: "#e74c3c"   // Red
   };
   
   const color = colors[alertData.level] || "#95a5a6";
@@ -223,7 +137,6 @@ function updateBadges(alertData) {
   [hrBadge, spo2Badge].forEach(badge => {
     if (badge) {
       badge.textContent = text;
-      badge.style.display = "inline-block";
       badge.style.backgroundColor = color;
       badge.style.color = "white";
     }
@@ -237,7 +150,7 @@ async function loadVitals() {
 
   const latest = data[0];
   
-  // Update values safely
+  // Update values
   const hrValueEl = document.querySelector("#hr-value");
   const spo2ValueEl = document.querySelector("#spo2-value");
   
@@ -248,9 +161,9 @@ async function loadVitals() {
     spo2ValueEl.innerHTML = `${latest.spo2 ?? "—"}<span>%</span>`;
   }
 
-  // Show alert if available
-  if (latest.alert_level !== undefined && latest.alert_message) {
-    showAlert({
+  // Update badges if alert info available
+  if (latest.alert_level !== undefined) {
+    updateBadges({
       level: latest.alert_level,
       level_name: latest.alert_info?.level_name || getAlertName(latest.alert_level),
       message: latest.alert_message,
@@ -267,7 +180,7 @@ function getAlertName(level) {
 }
 
 function getAlertColor(level) {
-  const colors = { 0: "#27ae60", 1: "#f39c12", 2: "#e74c3c" };
+  const colors = { 0: "#27ae60", 1: "#e74c3c", 2: "#e74c3c" };
   return colors[level] || "#95a5a6";
 }
 
