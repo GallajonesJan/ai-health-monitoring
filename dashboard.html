@@ -61,10 +61,15 @@
     </header>
 
     <!-- Alert Banner -->
-    <div id="alert-banner" class="alert-banner">
-      <h3 id="alert-title">🔔 Health Alert</h3>
-      <p id="alert-message">Checking your vitals...</p>
-    </div>
+<!-- Professional Alert Banner -->
+<div id="alert-banner" class="alert-banner">
+  <div class="alert-icon">✔</div>
+  <div class="alert-text">
+    <h3 id="alert-title">Normal Status</h3>
+    <p id="alert-message">Your vitals are within healthy range.</p>
+  </div>
+</div>
+
 
     <!-- Health Cards -->
     <section class="cards">
@@ -155,9 +160,16 @@ function showAlert(alertData) {
   banner.classList.add(levelClass[alertData.level] || "alert-normal");
   banner.classList.add("show");
 
-  const icons = { 0: "✅", 1: "⚠️", 2: "🚨" };
-  title.textContent = `${icons[alertData.level]} ${alertData.level_name} Status`;
-  message.textContent = alertData.message;
+ // Icons for left-side icon box
+const icons = { 0: "✔", 1: "⚠", 2: "⛔" };
+
+// Update left icon
+document.querySelector(".alert-icon").textContent = icons[alertData.level];
+
+// Text without emoji
+title.textContent = `${alertData.level_name} Status`;
+message.textContent = alertData.message;
+
 
   updateBadges(alertData);
 }

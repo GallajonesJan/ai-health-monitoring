@@ -14,76 +14,78 @@ body {
   padding: 0;
 }
 
+/* ======================= PROFESSIONAL ALERT BANNER ======================= */
+
 .alert-banner {
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  display: none;
-  animation: slideDown 0.5s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  border-radius: 10px;
+  margin: 20px 0;
+  border-left: 5px solid transparent;
+  background: #f6f8f7;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.25s ease;
 }
 
 .alert-banner.show {
-  display: block;
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.alert-banner h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2rem;
-}
-
-.alert-banner p {
-  margin: 0;
-  font-size: 0.95rem;
-}
-
-.alert-normal {
-  background: #d4edda;
-  border-left: 5px solid #27ae60;
-  color: #155724;
-}
-
-.alert-warning {
-  background: #fff3cd;
-  border-left: 5px solid #f39c12;
-  color: #856404;
-}
-
-.alert-critical {
-  background: #f8d7da;
-  border-left: 5px solid #e74c3c;
-  color: #721c24;
-  animation: pulse 2s infinite;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-  }
-  50% {
-    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6);
-  }
-}
-
-.alert-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+/* Icon styling */
+.alert-icon {
+  font-size: 20px;
   font-weight: 600;
-  margin-left: 8px;
 }
+
+/* Text group */
+.alert-text h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.alert-text p {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Level: Normal */
+.alert-normal {
+  border-left-color: #27ae60;
+  background: #e9f6ee;
+}
+
+.alert-normal .alert-icon {
+  color: #27ae60;
+}
+
+/* Level: Warning */
+.alert-warning {
+  border-left-color: #f39c12;
+  background: #fff6e5;
+}
+
+.alert-warning .alert-icon {
+  color: #f39c12;
+}
+
+/* Level: Critical */
+.alert-critical {
+  border-left-color: #e74c3c;
+  background: #fdecea;
+}
+
+.alert-critical .alert-icon {
+  color: #e74c3c;
+}
+
 
 /* === Container & Hero === */
 .container {
